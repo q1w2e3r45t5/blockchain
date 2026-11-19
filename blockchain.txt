@@ -1,0 +1,255 @@
+exp 7 solidity transfer 
+
+open remixide
+create new file in contracts name it BalanceTransferContract.sol
+then select compiler version 0.8.20 then compile it
+go to deploy under environment click remix vm then cacun
+then deploy and go to deployed contract in value field put 0 and keep it wei
+go to deposite and press transact then press getcontractbalance call
+in account drop down copy acc2 address and switch back to acc1
+in transferBalance put that address and amount 2000000000000000000 press transact
+press getcontractbalance output should be 3000000000000000000
+then switch too acc2 and in transferbalance enter acc1 address and 1000000000000000000 amount
+it should fail then done completed
+code:
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+contract BalanceTransferContract {
+    address public owner;
+    event Deposited(address indexed sender, uint256 amount);
+    event Transferred(address indexed recipient, uint256 amount);
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Not the owner");
+        _;
+    }
+    constructor() {
+        owner = msg.sender;
+    }
+    receive() external payable {
+        emit Deposited(msg.sender, msg.value);
+    }
+    function deposit() external payable {
+        require(msg.value > 0, "Amount must be greater than 0");
+        emit Deposited(msg.sender, msg.value);
+    }
+    function getContractBalance() external view returns (uint256) {
+        return address(this).balance;
+    }
+    function transferBalance(address payable _to, uint256 _amount)
+        external onlyOwner {
+        require(_to != address(0), "Invalid address");
+        require(address(this).balance >= _amount, "Insufficient balance");
+        (bool success, ) = _to.call{value: _amount}("");
+        require(success, "Transfer failed");
+        emit Transferred(_to, _amount);
+    }
+    function transferAll(address payable _to) external onlyOwner {
+        require(_to != address(0), "Invalid address");
+        uint256 total = address(this).balance;
+        require(total > 0, "Balance is zero");
+        (bool success, ) = _to.call{value: total}("");
+        require(success, "Transfer failed");
+        emit Transferred(_to, total);
+    }
+}
+
+exp -8 
+go to remixide create new file SimpleToken.sol in contracts
+code:
+
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.24;
+contract SimpleToken {
+    string public name = "EduToken";
+    string public symbol = "EDU";
+    uint8 public decimals = 18;
+    uint256 public totalSupply;
+    mapping(address => uint256) public balanceOf;
+    event Transfer(address indexed from, address indexed to, uint256 value);
+    constructor(uint256 initialSupply) {
+        totalSupply = initialSupply * 10 ** uint256(decimals);
+        balanceOf[msg.sender] = totalSupply;
+        emit Transfer(address(0), msg.sender, totalSupply);
+    }
+    function transfer(address to, uint256 value) public returns (bool) {
+        require(to != address(0), "Invalid recipient");
+        require(balanceOf[msg.sender] >= value, "Not enough tokens");
+        balanceOf[msg.sender] -= value;
+        balanceOf[to] += value;
+        emit Transfer(msg.sender, to, value);
+        return true;
+    }
+}
+
+compile the code select 0.8.20 compiler
+open metamask in all default network select sepolia in test network
+ open Chainlink Sepolia Faucet
+1. Connect your MetaMask wallet.
+2. Select Ethereum Sepolia.
+3. Request test ETH.
+4. Wait for the transaction.
+5. Check your MetaMask balance.
+open remixide in deploy click environment browser extension metamask
+connection request in metamask will popup press confirm
+under deploy in initialsupply enter 1000 then press deploy metamask verification will open accept it
+Under Deployed Contracts
+You'll see several blue buttons.
+Click each of these:
+name,symbol,decimals,totalSupply
+in balanceof put metamask acc1 address and press call
+goto metamask select acc2 copy address then to remixide under deployed contract transact
+paste address of acc2 and value 1000000000000000000 and click transact 
+meta will open confirm it and then in balanceof put acc1 address then call output should be
+	"0": "uint256: 999000000000000000000"
+again in balanceof enter acc2 address balance should be 1000000000000000000
+done
+
+Expt 9
+
+*browse metamask, add as extension to firefox, create or login to wallet using password.
+*from top right menu enable-show test networks, click all default network-select sepolia.
+*from to left-copy account address.
+*new tab-browse google cloud faucet, paste address, send test ETH.
+*Open MetaMask and check your Sepolia ETH balance.
+*click Activity and check whether the ETH transaction is successful.
+*Open the Sepolia Etherscan explorer: https://sepolia.etherscan.io
+*Paste your MetaMask account address in the search bar.
+*Open the latest transaction and check its status.
+*Copy the Transaction Hash (Tx Hash) and save it for reference.
+*Open MetaMask and click Send.
+*Paste another Sepolia wallet address in the recipient field.
+*Enter a small amount of Sepolia ETH  0.001 and click Next.
+*Check the recipient address and gas fee, then click Confirm.
+*Wait for the transaction to complete.
+*go to activity in acc1 copy transcation id of latest transaction
+*Open Sepolia Etherscan and search using the transaction hash.
+*Verify that the transaction status is Success.
+*Check the recipient's wallet to confirm that the ETH has been received.
+
+Expt 10
+
+*open jupyter notebook, new-python3, type below code:
+
+import hashlib
+import json
+import time
+def sha256(data):
+    return hashlib.sha256(data.encode("utf-8")).hexdigest()
+def merkle_root(transactions):
+    if not transactions:
+        raise ValueError("Transactions cannot be empty")
+    hashes = [sha256(tx) for tx in transactions]
+    while len(hashes) > 1:
+        if len(hashes) % 2:
+            hashes.append(hashes[-1])
+        hashes = [sha256(hashes[i] + hashes[i + 1])
+            	  for i in range(0, len(hashes), 2)]
+    return hashes[0]
+class Block:
+    def __init__(self, index, prev_hash, transactions):
+        self.index = index
+        self.prev_hash = prev_hash
+        self.transactions = list(transactions)
+        self.merkle_root = merkle_root(self.transactions)
+        self.timestamp = time.time_ns()
+        self.hash = self.compute_hash()
+    def compute_hash(self):
+        header = json.dumps({
+            "index": self.index,
+            "prev_hash": self.prev_hash,
+            "merkle_root": self.merkle_root,
+            "timestamp": self.timestamp
+        }, sort_keys=True, separators=(",", ":"))
+        return sha256(header)
+class Blockchain:
+    def __init__(self):
+        self.chain = [Block(0, "0" * 64, ["Genesis Block"])]
+    def get_latest_block(self):
+        return self.chain[-1]
+    def add_block(self, transactions):
+        self.chain.append(Block(
+            len(self.chain),
+            self.get_latest_block().hash,
+            transactions))
+    def is_valid(self):
+        for i, block in enumerate(self.chain):
+            if block.index != i or not block.transactions:
+                return False
+            if block.merkle_root != merkle_root(block.transactions):
+                return False
+            if block.hash != block.compute_hash():
+                return False
+            previous = "0" * 64 if i == 0 else self.chain[i - 1].hash
+            if block.prev_hash != previous:
+                return False
+        return True
+    def display_chain(self):
+        for block in self.chain:
+            print("\n=== Block", block.index, "===")
+            print("Previous Hash:", block.prev_hash)
+            print("Merkle Root:", block.merkle_root)
+            print("Block Hash:", block.hash)
+            print("Transactions:", block.transactions)
+if __name__ == "__main__":
+    my_chain = Blockchain()
+    my_chain.add_block(["Alice -> Bob: 5","Bob -> Carol: 2"])
+    my_chain.add_block(["Eve -> Frank: 3","George -> Harry: 4"])
+    my_chain.add_block(["Ivan -> Jack: 7","Karen -> Leo: 6"])
+    my_chain.display_chain()
+    print("\nChain valid:", my_chain.is_valid())
+    my_chain.chain[1].transactions[0] = "Alice -> Bob: 500"
+    print("Valid after tampering:", my_chain.is_valid())
+
+
+Expt 11
+
+*browse metamask, add as extension to firefox, create or login to wallet using password.
+*click the profile/account icon, click Add account or hardware wallet-Add new account.
+*create two accounts-copy both address.
+*from top right menu enable-show test networks, click all default network-select sepolia.
+*select account1, copy address, new tab-browse google cloud faucet, paste address, send test ETH.
+*in metamask page-at the top, select Account 1-click the Send button.
+*in the To or recipient address field, paste the public wallet address of Account 2-click Next.
+*enter amount of ETH to send (e.g.0.001), click next, click confirm.
+*verify transaction from activity tab of metamask.
+
+Expt 12
+
+*open ubuntu terminal, download fabric sample and binaries: 
+curl -sSL https://bit.ly/2ysbiFn | bash -s
+*enter test network folder
+cd fabric-samples/test-network
+*start n/w and create channel
+./network.sh up createChannel -c mychannel -ca
+*verify running docker
+docker ps
+*deploy smart contract(chaincode)
+./network.sh deployCC -ccn basic -ccp ../asset-transfer-basic/chaincode-go -ccl go
+*set environment for Org1
+export PATH=${PWD}/../bin:$PATH
+export FABRIC_CFG_PATH=$PWD/../config/
+export CORE_PEER_TLS_ENABLED=true
+export CORE_PEER_LOCALMSPID="Org1MSP"
+export CORE_PEER_TLS_ROOTCERT_FILE=${PWD}/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt
+export CORE_PEER_MSPCONFIGPATH=${PWD}/organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp
+export CORE_PEER_ADDRESS=localhost:7051
+*invoke chaincode
+peer chaincode invoke -o localhost:7050 \
+--ordererTLSHostnameOverride orderer.example.com \
+-C mychannel -n basic \
+--tls --cafile ${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem \
+-c '{"Args":["CreateAsset","asset1","blue","10","Tom","1000"]}'
+*query chaincode
+peer chaincode query -C mychannel -n basic -c '{"Args":["ReadAsset","asset1"]}'
+
+****************************************************************************************************
+if *invoke doesn't work
+peer chaincode invoke -o localhost:7050 \
+--ordererTLSHostnameOverride orderer.example.com \
+-C mychannel -n basic \
+--tls --cafile ${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem \
+--peerAddresses localhost:7051 \
+--tlsRootCertFiles ${PWD}/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt \
+--peerAddresses localhost:9051 \
+--tlsRootCertFiles ${PWD}/organizations/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls/ca.crt \
+-c '{"Args":["CreateAsset","asset1","blue","10","Tom","1000"]}'
