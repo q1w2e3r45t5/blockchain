@@ -131,75 +131,62 @@ Expt 10
 *open jupyter notebook, new-python3, type below code:
 
 import hashlib
-import json
 import time
-def sha256(data):
-    return hashlib.sha256(data.encode("utf-8")).hexdigest()
-def merkle_root(transactions):
-    if not transactions:
-        raise ValueError("Transactions cannot be empty")
-    hashes = [sha256(tx) for tx in transactions]
-    while len(hashes) > 1:
-        if len(hashes) % 2:
-            hashes.append(hashes[-1])
-        hashes = [sha256(hashes[i] + hashes[i + 1])
-            	  for i in range(0, len(hashes), 2)]
-    return hashes[0]
+
+def sha(data):
+    return hashlib.sha256(data.encode()).hexdigest()
+
+def merkle(tx):
+    h = [sha(t) for t in tx]
+    while len(h) > 1:
+        if len(h) % 2:
+            h.append(h[-1])
+        h = [sha(h[i] + h[i+1]) for i in range(0, len(h), 2)]
+    return h[0]
+
 class Block:
-    def __init__(self, index, prev_hash, transactions):
+    def __init__(self, index, prev, tx):
         self.index = index
-        self.prev_hash = prev_hash
-        self.transactions = list(transactions)
-        self.merkle_root = merkle_root(self.transactions)
-        self.timestamp = time.time_ns()
-        self.hash = self.compute_hash()
-    def compute_hash(self):
-        header = json.dumps({
-            "index": self.index,
-            "prev_hash": self.prev_hash,
-            "merkle_root": self.merkle_root,
-            "timestamp": self.timestamp
-        }, sort_keys=True, separators=(",", ":"))
-        return sha256(header)
+        self.prev = prev
+        self.tx = tx
+        self.root = merkle(tx)
+        self.time = time.time()
+        self.hash = self.calculate()
+
+    def calculate(self):
+        return sha(str(self.index) + self.prev + self.root + str(self.time))
+
 class Blockchain:
     def __init__(self):
-        self.chain = [Block(0, "0" * 64, ["Genesis Block"])]
-    def get_latest_block(self):
-        return self.chain[-1]
-    def add_block(self, transactions):
-        self.chain.append(Block(
-            len(self.chain),
-            self.get_latest_block().hash,
-            transactions))
-    def is_valid(self):
-        for i, block in enumerate(self.chain):
-            if block.index != i or not block.transactions:
-                return False
-            if block.merkle_root != merkle_root(block.transactions):
-                return False
-            if block.hash != block.compute_hash():
-                return False
-            previous = "0" * 64 if i == 0 else self.chain[i - 1].hash
-            if block.prev_hash != previous:
+        self.chain = [Block(0, "0", ["Genesis"])]
+
+    def add(self, tx):
+        self.chain.append(Block(len(self.chain), self.chain[-1].hash, tx))
+
+    def valid(self):
+        for i, b in enumerate(self.chain):
+            prev = "0" if i == 0 else self.chain[i-1].hash
+            if b.prev != prev or b.root != merkle(b.tx) or b.hash != b.calculate():
                 return False
         return True
-    def display_chain(self):
-        for block in self.chain:
-            print("\n=== Block", block.index, "===")
-            print("Previous Hash:", block.prev_hash)
-            print("Merkle Root:", block.merkle_root)
-            print("Block Hash:", block.hash)
-            print("Transactions:", block.transactions)
-if __name__ == "__main__":
-    my_chain = Blockchain()
-    my_chain.add_block(["Alice -> Bob: 5","Bob -> Carol: 2"])
-    my_chain.add_block(["Eve -> Frank: 3","George -> Harry: 4"])
-    my_chain.add_block(["Ivan -> Jack: 7","Karen -> Leo: 6"])
-    my_chain.display_chain()
-    print("\nChain valid:", my_chain.is_valid())
-    my_chain.chain[1].transactions[0] = "Alice -> Bob: 500"
-    print("Valid after tampering:", my_chain.is_valid())
 
+    def display(self):
+        for b in self.chain:
+            print("\nBlock:", b.index)
+            print("Previous Hash:", b.prev)
+            print("Merkle Root:", b.root)
+            print("Block Hash:", b.hash)
+            print("Transactions:", b.tx)
+
+bc = Blockchain()
+bc.add(["Alice -> Bob: 5", "Bob -> Carol: 2"])
+bc.add(["Eve -> Frank: 3", "George -> Harry: 4"])
+
+bc.display()
+print("\nChain valid:", bc.valid())
+
+bc.chain[1].tx[0] = "Alice -> Bob: 500"
+print("After tampering:", bc.valid())
 
 Expt 11
 
