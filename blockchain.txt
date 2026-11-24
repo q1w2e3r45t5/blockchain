@@ -4,7 +4,7 @@ open remixide
 create new file in contracts name it BalanceTransferContract.sol
 then select compiler version 0.8.20 then compile it
 go to deploy under environment click remix vm then cacun
-then deploy and go to deployed contract in value field put 0 and keep it wei
+then deploy and go to deployed contract in value field put 5 and keep it ether
 go to deposite and press transact then press getcontractbalance call
 in account drop down copy acc2 address and switch back to acc1
 in transferBalance put that address and amount 2000000000000000000 press transact
