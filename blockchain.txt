@@ -80,8 +80,8 @@ You'll see several blue buttons.
 Click each of these:
 name,symbol,decimals,totalSupply
 in balanceof put metamask acc1 address and press call
-goto metamask select acc2 copy address then to remixide under deployed contract transact
-paste address of acc2 and value 1000000000000000000 and click transact 
+goto metamask select acc2 copy address then to remixide under deployed contract 
+transfer paste address of acc2 and value 1000000000000000000 and click transact 
 meta will open confirm it and then in balanceof put acc1 address then call output should be
 	"0": "uint256: 999000000000000000000"
 again in balanceof enter acc2 address balance should be 1000000000000000000
