@@ -7,7 +7,8 @@ go to deploy under environment click remix vm then cacun
 then deploy and go to deployed contract in value field put 5 and keep it ether
 go to deposite and press transact then press getcontractbalance call
 in account drop down copy acc2 address and switch back to acc1
-in transferBalance put that address and amount 2000000000000000000 press transact
+then in value put 0 and wei
+in transferBalance put that acc2 address and amount 2000000000000000000 press transact
 press getcontractbalance output should be 3000000000000000000
 then switch too acc2 and in transferbalance enter acc1 address and 1000000000000000000 amount
 it should fail then done completed
